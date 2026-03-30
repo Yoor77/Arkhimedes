@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دافعة ارخميدس</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d2d4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="دافعة ارخميدس">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="description" content="محاكاة تفاعلية لدافعة ارخميدس - فيزياء السنة الرابعة متوسط">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Cairo',sans-serif;background:#eef3f8;color:#162232;min-height:100vh;}
+header{background:linear-gradient(135deg,#0d2d4a,#1a4a7a);color:#fff;text-align:center;padding:14px 10px 10px;}
+header h1{font-size:1.45rem;}
+header p{font-size:0.72rem;opacity:0.7;margin-top:2px;}
+
+/* ===== TABS ===== */
+.tabs{display:flex;background:#0d2d4a;padding:8px 8px 0;gap:5px;overflow-x:auto;}
+.tab-btn{flex:1;min-width:0;padding:7px 6px 8px;border:2px solid rgba(255,255,255,0.15);border-bottom:none;color:rgba(255,255,255,0.60);font-family:'Cairo',sans-serif;font-size:0.70rem;font-weight:600;cursor:pointer;border-radius:9px 9px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all 0.2s;}
+
+/* لون مختلف لكل لسان */
+.tab-btn:nth-child(1){background:rgba(21,101,192,0.35);}
+.tab-btn:nth-child(2){background:rgba(0,137,123,0.35);}
+.tab-btn:nth-child(3){background:rgba(123,31,162,0.35);}
+.tab-btn:nth-child(4){background:rgba(230,81,0,0.35);}
+
+/* حالة النشاط لكل لسان */
+.tab-btn:nth-child(1).active{background:#dbeeff;border-color:#64b5f6;color:#0d2d4a;font-weight:700;}
+.tab-btn:nth-child(2).active{background:#e0f5f2;border-color:#4db6ac;color:#00493e;font-weight:700;}
+.tab-btn:nth-child(3).active{background:#f3e5f5;border-color:#ce93d8;color:#4a148c;font-weight:700;}
+.tab-btn:nth-child(4).active{background:#fff3e0;border-color:#ffb74d;color:#bf360c;font-weight:700;}
+
+/* شريط ملون أسفل اللسان عند التحويم */
+.tab-btn:hover:not(.active){background:rgba(255,255,255,0.12);}
+
+/* ===== LAYOUT ===== */
+.app-wrapper{max-width:1100px;margin:0 auto;}
+.page{display:none;padding:12px;}
+.page.active{display:block;}
+
+/* Desktop two-column layout for pages */
+@media(min-width:768px){
+  .page{padding:20px 24px;}
+  .desktop-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;}
+  .desktop-cols .card:first-child{grid-column:1;}
+  .desktop-cols .card:last-child{grid-column:2;}
+  header h1{font-size:1.75rem;}
+  header p{font-size:0.82rem;}
+  .tabs{padding:10px 14px 0;gap:8px;}
+  .tab-btn{font-size:0.82rem;padding:9px 12px 10px;}
+}
+@media(min-width:1024px){
+  .field label{min-width:140px;}
+  canvas{max-width:100%;width:100%;height:auto;}
+}
+
+.card{background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 12px rgba(13,45,74,0.10);border:1px solid #cad6e4;margin-bottom:10px;}
+@media(min-width:768px){.card{padding:20px 22px;border-radius:16px;}}
+.ctitle{font-size:0.85rem;font-weight:700;color:#0d2d4a;border-bottom:2px solid #bbdefb;padding-bottom:6px;margin-bottom:11px;}
+@media(min-width:768px){.ctitle{font-size:1rem;margin-bottom:16px;}}
+.field{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.field label{font-size:0.75rem;min-width:115px;color:#607080;flex-shrink:0;}
+.field input[type=number]{flex:1;border:1.5px solid #cad6e4;border-radius:8px;padding:6px 8px;font-size:0.80rem;font-family:'Cairo',sans-serif;background:#f5f8fc;color:#162232;outline:none;direction:ltr;}
+.field input[type=number]:focus{border-color:#1e88e5;}
+.field .unit{font-size:0.68rem;color:#90a4ae;min-width:42px;}
+.field input[type=range]{flex:1;accent-color:#1565c0;cursor:pointer;}
+.field select{flex:1;border:1.5px solid #cad6e4;border-radius:8px;padding:6px 8px;font-size:0.75rem;font-family:'Cairo',sans-serif;background:#f5f8fc;color:#1565c0;outline:none;}
+.rval{font-weight:700;color:#1565c0;font-size:0.80rem;min-width:42px;text-align:center;}
+.btn{width:100%;background:#1565c0;color:#fff;border:none;border-radius:9px;padding:9px;font-size:0.83rem;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;margin-top:4px;transition:background 0.2s;}
+.btn:hover{background:#1976d2;}
+.result{background:#e8f1fb;border-radius:9px;padding:10px 13px;margin-top:9px;font-size:0.80rem;line-height:2.1;border-right:3px solid #1e88e5;min-height:48px;}
+.hint{font-size:0.70rem;color:#1565c0;font-weight:700;margin:-3px 0 6px 2px;min-height:15px;}
+.detected{font-size:0.72rem;background:#e8f5e9;color:#2e7d32;border-radius:6px;padding:5px 10px;margin-top:6px;font-weight:700;border-right:3px solid #4caf50;}
+canvas{border-radius:12px;border:1.5px solid #cad6e4;display:block;margin:0 auto;max-width:100%;}
+.eq-badge{text-align:center;padding:6px 16px;border-radius:20px;font-size:0.81rem;font-weight:700;border:2px solid;display:inline-block;}
+.eq-float{background:#e0f2f1;color:#00695c;border-color:#00897b;}
+.eq-suspend{background:#fff8e1;color:#e65100;border-color:#f9a825;}
+.eq-sink{background:#fce4ec;color:#b71c1c;border-color:#e53935;}
+.fleg{display:flex;justify-content:center;gap:16px;font-size:0.73rem;margin-top:5px;}
+.fleg span{display:flex;align-items:center;gap:4px;}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.acols{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.acol h3{font-size:0.78rem;font-weight:700;color:#0d2d4a;margin-bottom:8px;}
+.acol p{font-size:0.70rem;color:#607080;margin-bottom:8px;}
+.dbgroup{font-size:0.68rem;color:#888;padding:3px 6px;font-weight:700;background:#f0f4f8;}
+@media(max-width:520px){.acols{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="app-wrapper">
+<header>
+  <h1>&#9875; دافعة ارخميدس</h1>
+  <p>محاكاة تفاعلية - فيزياء السنة الرابعة متوسط</p>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('t1',this)">الثقل الظاهري</button>
+  <button class="tab-btn" onclick="showTab('t2',this)">حجم السائل المزاح</button>
+  <button class="tab-btn" onclick="showTab('t3',this)">الطفو والغوص</button>
+  <button class="tab-btn" onclick="showTab('t4',this)">النشاط</button>
+</div>
+
+<!-- PAGE 1 -->
+<div id="t1" class="page active">
+<div class="desktop-cols">
+  <div class="card">
+    <div class="ctitle">حساب الدافعة بالثقل الظاهري</div>
+    <p style="font-size:0.75rem;color:#607080;margin-bottom:10px;">FA = P - P<sub>ap</sub> &nbsp;|&nbsp; P : ثقل الجسم في الهواء &nbsp;|&nbsp; P<sub>ap</sub> : الثقل الظاهري في السائل</p>
+    <div class="field">
+      <label>ثقل الجسم P</label>
+      <input type="number" id="m1P" value="5.0" step="0.01" min="0">
+      <span class="unit">N</span>
+    </div>
+    <div class="field">
+      <label>الثقل الظاهري P<sub>ap</sub></label>
+      <input type="number" id="m1Pp" value="3.2" step="0.01" min="0">
+      <span class="unit">N</span>
+    </div>
+    <button class="btn" onclick="calc1()">احسب الدافعة</button>
+    <div class="result" id="r1">ادخل القيم ثم اضغط احسب</div>
+  </div>
+  <div class="card">
+    <div class="ctitle">التمثيل البياني</div>
+    <canvas id="c1" width="300" height="260"></canvas>
+  </div>
+</div>
+</div>
+
+<!-- PAGE 2 -->
+<div id="t2" class="page">
+<div class="desktop-cols">
+  <div class="card">
+    <div class="ctitle">حساب الدافعة بحجم السائل المزاح</div>
+    <p style="font-size:0.75rem;color:#607080;margin-bottom:10px;">FA = &#961;<sub>l</sub> &times; g &times; V<sub>l</sub> &nbsp;|&nbsp; V<sub>l</sub> : حجم السائل المزاح</p>
+    <div class="field">
+      <label>اختر السائل</label>
+      <select id="m2sel" onchange="m2SelChanged()">
+        <option value="">-- اختر --</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>&#961;<sub>l</sub> الكتلة الحجمية</label>
+      <input type="number" id="m2rho" value="1000" step="10" min="1">
+      <span class="unit">kg/m&#179;</span>
+    </div>
+    <div class="field">
+      <label>V<sub>l</sub> حجم السائل المزاح</label>
+      <input type="number" id="m2V" value="200" step="1" min="0">
+      <span class="unit">cm&#179;</span>
+    </div>
+    <button class="btn" onclick="calc2()">احسب الدافعة</button>
+    <div class="result" id="r2">ادخل القيم ثم اضغط احسب</div>
+  </div>
+  <div class="card">
+    <div class="ctitle">التمثيل البياني</div>
+    <canvas id="c2" width="300" height="260"></canvas>
+  </div>
+</div>
+</div>
+
+<!-- PAGE 3 -->
+<div id="t3" class="page">
+<div class="desktop-cols">
+  <div class="card">
+    <div class="ctitle">محاكاة الطفو والتوازن</div>
+    <div class="field">
+      <label>&#961;<sub>s</sub> الجسم</label>
+      <input type="range" id="rhoS" min="200" max="1980" value="700" step="10" oninput="simInput()">
+      <span class="rval" id="rvS">700</span>
+      <span class="unit">kg/m&#179;</span>
+    </div>
+    <div class="field">
+      <label>&#961;<sub>l</sub> السائل</label>
+      <input type="range" id="rhoF" min="500" max="2000" value="1000" step="10" oninput="simInput()">
+      <span class="rval" id="rvF">1000</span>
+      <span class="unit">kg/m&#179;</span>
+    </div>
+    <div class="field">
+      <label>V<sub>s</sub> حجم الجسم</label>
+      <input type="range" id="volS" min="50" max="400" value="180" step="10" oninput="simInput()">
+      <span class="rval" id="rvV">180</span>
+      <span class="unit">cm&#179;</span>
+    </div>
+    <div class="result" id="simInfo">-</div>
+  </div>
+  <div class="card" style="text-align:center;">
+    <canvas id="simC" width="310" height="390"></canvas>
+    <div style="margin-top:8px;">
+      <span id="eqBadge" class="eq-badge eq-float">جسم طافٍ</span>
+    </div>
+    <div class="fleg" style="margin-top:6px;">
+      <span><span class="dot" style="background:#00897b;"></span>دافعة ارخميدس FA</span>
+      <span><span class="dot" style="background:#c62828;"></span>ثقل الجسم P</span>
+    </div>
+    <p style="font-size:0.67rem;color:#607080;margin-top:4px;">* مركز الثقل (مبدا P) &nbsp; * المركز الهندسي للجزء المغمور (مبدا FA)</p>
+  </div>
+</div>
+</div>
+
+<!-- PAGE 4 -->
+<div id="t4" class="page">
+  <div class="card">
+    <div class="ctitle">نشاط - حجم الجزء الطافي والجزء المغمور</div>
+    <div class="acols">
+
+      <!-- REGULAR -->
+      <div class="acol">
+        <h3>جسم منتظم الشكل</h3>
+        <div class="field">
+          <label>الشكل</label>
+          <select id="shape" onchange="shapeChanged()">
+            <option value="cube">مكعب</option>
+            <option value="cyl">اسطوانة</option>
+            <option value="sphere">كرة</option>
+          </select>
+        </div>
+        <div id="shapeFlds"></div>
+        <div class="field">
+          <label>مادة الجسم</label>
+          <select id="solidSel" onchange="solidSelChanged()">
+            <option value="">-- اختر --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>&#961;<sub>s</sub> الجسم</label>
+          <input type="number" id="arRhoS" value="700" step="10" min="1">
+          <span class="unit">kg/m&#179;</span>
+        </div>
+        <div class="field">
+          <label>السائل</label>
+          <select id="fluidSel1" onchange="fluidSel1Changed()">
+            <option value="">-- اختر --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>&#961;<sub>l</sub> السائل</label>
+          <input type="number" id="arRhoF" value="1000" step="10" min="1">
+          <span class="unit">kg/m&#179;</span>
+        </div>
+        <button class="btn" onclick="calcReg()">احسب</button>
+        <div class="result" id="regRes">-</div>
+        <div style="margin-top:8px;text-align:center;">
+          <canvas id="actC1" width="130" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- IRREGULAR -->
+      <div class="acol">
+        <h3>جسم غير منتظم</h3>
+        <p>نقيس P و P<sub>ap</sub> في الماء لاستخراج V<sub>s</sub> و &#961;<sub>s</sub> ثم نحدد وضعيته في السائل 2</p>
+        <div class="field">
+          <label>ثقل الجسم P</label>
+          <input type="number" id="irP" value="4.5" step="0.01" min="0">
+          <span class="unit">N</span>
+        </div>
+        <div class="field">
+          <label>الثقل الظاهري P<sub>ap</sub></label>
+          <input type="number" id="irPp" value="2.7" step="0.01" min="0">
+          <span class="unit">N</span>
+        </div>
+        <div class="field">
+          <label>&#961;<sub>l1</sub> السائل 1</label>
+          <input type="number" id="irRho1" value="1000" readonly style="background:#e8f1fb;color:#1565c0;font-weight:700;">
+          <span class="unit">kg/m&#179;</span>
+        </div>
+        <div class="hint">ماء (مرجع ثابت)</div>
+        <div class="field">
+          <label>السائل 2 (اختبار)</label>
+          <select id="fluidSel3" onchange="fluidSel3Changed()">
+            <option value="">-- اختر --</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>&#961;<sub>l2</sub> السائل 2</label>
+          <input type="number" id="irRho2" value="800" step="10" min="1" oninput="updFl('irRho2','fn2')">
+          <span class="unit">kg/m&#179;</span>
+        </div>
+        <div class="hint" id="fn2">زيت نباتي</div>
+        <button class="btn" onclick="calcIrr()">احسب</button>
+        <div class="result" id="irrRes">-</div>
+        <div id="detectedMat" class="detected" style="display:none;"></div>
+        <div style="margin-top:8px;text-align:center;">
+          <canvas id="actC2" width="130" height="200"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div><!-- /app-wrapper -->
+<script>
+var g = 9.8;
+var animY = null;
+var animTarget = null;
+var animRAF = null;
+var SIM_SPEED = 0.018;
+
+var SOLIDS = [
+  {grp:'فلزات', name:'ذهب', rho:19300},
+  {grp:'فلزات', name:'رصاص', rho:11340},
+  {grp:'فلزات', name:'فضة', rho:10500},
+  {grp:'فلزات', name:'نحاس', rho:8960},
+  {grp:'فلزات', name:'نيكل', rho:8900},
+  {grp:'فلزات', name:'حديد', rho:7870},
+  {grp:'فلزات', name:'صلب', rho:7800},
+  {grp:'فلزات', name:'زنك', rho:7130},
+  {grp:'فلزات', name:'قصدير', rho:7300},
+  {grp:'فلزات', name:'كروم', rho:7190},
+  {grp:'فلزات', name:'تيتانيوم', rho:4510},
+  {grp:'فلزات', name:'الومنيوم', rho:2700},
+  {grp:'فلزات', name:'مغنيزيوم', rho:1740},
+  {grp:'حجارة', name:'غرانيت', rho:2700},
+  {grp:'حجارة', name:'رخام', rho:2600},
+  {grp:'حجارة', name:'زجاج', rho:2500},
+  {grp:'حجارة', name:'خرسانة', rho:2300},
+  {grp:'حجارة', name:'طوب', rho:1800},
+  {grp:'حجارة', name:'ملح طعام', rho:2160},
+  {grp:'حجارة', name:'جبس', rho:2320},
+  {grp:'خشب', name:'خشب ابنوس', rho:1200},
+  {grp:'خشب', name:'خشب بلوط', rho:720},
+  {grp:'خشب', name:'خشب صنوبر', rho:550},
+  {grp:'خشب', name:'خشب ارز', rho:560},
+  {grp:'خشب', name:'فلين', rho:200},
+  {grp:'مواد اخرى', name:'عاج', rho:1850},
+  {grp:'مواد اخرى', name:'عظم', rho:1900},
+  {grp:'مواد اخرى', name:'جليد', rho:917},
+  {grp:'مواد اخرى', name:'شمع', rho:900},
+  {grp:'مواد اخرى', name:'بلاستيك PVC', rho:1380},
+  {grp:'مواد اخرى', name:'بولي ايثيلين', rho:950},
+  {grp:'مواد اخرى', name:'مطاط', rho:1200},
+  {grp:'مواد اخرى', name:'فحم', rho:1350},
+  {grp:'مواد اخرى', name:'كبريت', rho:2070}
+];
+
+var FLUIDS = [
+  {grp:'غازات', name:'هواء', rho:1.2},
+  {grp:'وقود', name:'بنزين', rho:720},
+  {grp:'كحولات', name:'كحول ايثيلي', rho:789},
+  {grp:'زيوت', name:'زيت نباتي', rho:800},
+  {grp:'وقود', name:'كيروسين', rho:820},
+  {grp:'زيوت', name:'زيت زيتون', rho:900},
+  {grp:'زيوت', name:'زيت محرك', rho:880},
+  {grp:'ماء', name:'ماء مقطر', rho:998},
+  {grp:'ماء', name:'ماء', rho:1000},
+  {grp:'ماء', name:'حليب', rho:1030},
+  {grp:'ماء', name:'ماء البحر', rho:1025},
+  {grp:'ماء', name:'ماء مملح خفيف', rho:1050},
+  {grp:'ماء', name:'ماء مملح متوسط', rho:1100},
+  {grp:'ماء', name:'ماء مملح مشبع', rho:1200},
+  {grp:'اخرى', name:'غلسرين', rho:1260},
+  {grp:'اخرى', name:'عسل', rho:1400},
+  {grp:'اخرى', name:'حمض كبريتي', rho:1840},
+  {grp:'اخرى', name:'زئبق', rho:13600}
+];
+
+function buildSelect(sel, data) {
+  var html = '<option value="">-- اختر --</option>';
+  var curGrp = '';
+  for (var i = 0; i < data.length; i++) {
+    var d = data[i];
+    if (d.grp !== curGrp) {
+      if (curGrp !== '') html += '</optgroup>';
+      html += '<optgroup label="' + d.grp + '">';
+      curGrp = d.grp;
+    }
+    html += '<option value="' + d.rho + '">' + d.name + '</option>';
+  }
+  if (curGrp !== '') html += '</optgroup>';
+  sel.innerHTML = html;
+}
+
+function detectMat(rho, data, tol) {
+  var best = null, bestDiff = 9999999;
+  for (var i = 0; i < data.length; i++) {
+    var diff = Math.abs(data[i].rho - rho);
+    if (diff < bestDiff) { bestDiff = diff; best = data[i]; }
+  }
+  if (best && bestDiff <= tol) return best.name + ' (rho = ' + best.rho + ' kg/m3)';
+  return null;
+}
+
+function updFl(inId, lblId) {
+  var val = parseFloat(document.getElementById(inId).value);
+  var el = document.getElementById(lblId);
+  if (!val || val <= 0) { el.textContent = ''; return; }
+  var res = detectMat(val, FLUIDS, 30);
+  el.textContent = res ? res : '';
+}
+
+function m2SelChanged() {
+  var v = document.getElementById('m2sel').value;
+  if (v) document.getElementById('m2rho').value = v;
+}
+function solidSelChanged() {
+  var v = document.getElementById('solidSel').value;
+  if (v) document.getElementById('arRhoS').value = v;
+}
+function fluidSel1Changed() {
+  var v = document.getElementById('fluidSel1').value;
+  if (v) document.getElementById('arRhoF').value = v;
+}
+function fluidSel2Changed() {
+  var v = document.getElementById('fluidSel2').value;
+  if (v) { document.getElementById('irRho1').value = v; updFl('irRho1','fn1'); }
+}
+function fluidSel3Changed() {
+  var v = document.getElementById('fluidSel3').value;
+  if (v) { document.getElementById('irRho2').value = v; updFl('irRho2','fn2'); }
+}
+
+function showTab(id, btn) {
+  var pages = document.querySelectorAll('.page');
+  for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+  var btns = document.querySelectorAll('.tab-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 't1') drawD1();
+  if (id === 't2') drawD2();
+  if (id === 't3') { animY = null; simInput(); }
+  if (id === 't4') { shapeChanged(); drawIrr({}); }
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, lbl, side) {
+  var dx = x2-x1, dy = y2-y1;
+  var len = Math.sqrt(dx*dx+dy*dy);
+  if (len < 3) return;
+  var ux = dx/len, uy = dy/len;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  var aw = 9;
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-aw*ux+aw*0.4*uy, y2-aw*uy-aw*0.4*ux);
+  ctx.lineTo(x2-aw*ux-aw*0.4*uy, y2-aw*uy+aw*0.4*ux);
+  ctx.closePath(); ctx.fill();
+  if (lbl) {
+    ctx.font = 'bold 13px Cairo';
+    ctx.textAlign = (side === 'r') ? 'left' : 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(lbl, (side === 'r') ? x2+7 : x2-7, y2);
+  }
+  ctx.restore();
+}
+
+function drawBox(ctx, x, y, w, h, wt) {
+  ctx.fillStyle = 'rgba(21,101,192,0.15)';
+  ctx.fillRect(x+2, y+wt, w-4, h-wt-2);
+  ctx.fillStyle = 'rgba(100,181,246,0.45)';
+  ctx.fillRect(x+2, y+wt, w-4, 7);
+  ctx.strokeStyle = '#1565c0'; ctx.lineWidth = 2.5;
+  ctx.strokeRect(x, y, w, h);
+}
+
+function drawObj(ctx, ox, oy, ow, oh) {
+  var gr = ctx.createLinearGradient(ox,oy,ox+ow,oy+oh);
+  gr.addColorStop(0,'#f7bc6a'); gr.addColorStop(1,'#c97a1a');
+  ctx.fillStyle = gr; ctx.strokeStyle = '#7a4a0a'; ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(ox,oy,ow,oh,6);
+  else ctx.rect(ox,oy,ow,oh);
+  ctx.fill(); ctx.stroke();
+}
+
+function drawD1() {
+  var P  = parseFloat(document.getElementById('m1P').value) || 5;
+  var Pp = parseFloat(document.getElementById('m1Pp').value) || 3.2;
+  var FA = Math.max(0, P-Pp);
+  var subFrac = Math.min(Math.max(FA/P, 0.15), 0.92);
+  var cv = document.getElementById('c1');
+  var ctx = cv.getContext('2d');
+  var W = cv.width, H = cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#f5f9ff'; ctx.fillRect(0,0,W,H);
+  var oW=52, oH=58, scl=Math.min(18,72/Math.max(P,0.1));
+  var lCx=W*0.28;
+  ctx.fillStyle='#f0f4f8'; ctx.strokeStyle='#b0bec5'; ctx.lineWidth=1.2;
+  ctx.strokeRect(lCx-40,20,80,H-35);
+  ctx.fillStyle='#90a4ae'; ctx.font='10px Cairo'; ctx.textAlign='center';
+  ctx.fillText('الهواء', lCx, 34);
+  var lOy=H/2-oH/2;
+  drawObj(ctx,lCx-oW/2,lOy,oW,oH);
+  ctx.fillStyle='#c62828';
+  ctx.beginPath(); ctx.arc(lCx,lOy+oH/2,4,0,Math.PI*2); ctx.fill();
+  drawArrow(ctx,lCx,lOy+oH/2,lCx,lOy+oH/2+P*scl,'#c62828','P','r');
+  var rCx=W*0.72, bx=rCx-42, by=15, bw=84, bh=H-30, wt=42, wl=by+wt;
+  drawBox(ctx,bx,by,bw,bh,wt);
+  var subPx=subFrac*oH, rOy=wl-(oH-subPx);
+  drawObj(ctx,rCx-oW/2,rOy,oW,oH);
+  ctx.save(); ctx.setLineDash([4,3]); ctx.strokeStyle='#1565c0'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(rCx-oW/2,wl); ctx.lineTo(rCx+oW/2,wl); ctx.stroke();
+  ctx.setLineDash([]); ctx.restore();
+  var comY=rOy+oH/2, cobY=wl+subPx/2;
+  ctx.fillStyle='#c62828'; ctx.beginPath(); ctx.arc(rCx,comY,4,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#00897b'; ctx.beginPath(); ctx.arc(rCx,cobY,4,0,Math.PI*2); ctx.fill();
+  drawArrow(ctx,rCx,comY,rCx,comY+P*scl,'#c62828','P','l');
+  drawArrow(ctx,rCx,cobY,rCx,cobY-FA*scl,'#00897b','FA','r');
+  ctx.fillStyle='#546e7a'; ctx.font='9px Cairo'; ctx.textAlign='center';
+  ctx.fillText('في الهواء', lCx, H-8);
+  ctx.fillText('في السائل', rCx, H-8);
+}
+
+function drawD2() {
+  var rho=parseFloat(document.getElementById('m2rho').value)||1000;
+  var Vcm=parseFloat(document.getElementById('m2V').value)||200;
+  var V=Vcm*1e-6, FA=rho*g*V;
+  var cv=document.getElementById('c2');
+  var ctx=cv.getContext('2d');
+  var W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f5f9ff'; ctx.fillRect(0,0,W,H);
+  var bx=35,by=18,bw=W-70,bh=H-45,wt=38;
+  drawBox(ctx,bx,by,bw,bh,wt);
+  var oW=64,oH=64,cx=bx+bw/2,ox=cx-oW/2,oy=by+wt+16;
+  drawObj(ctx,ox,oy,oW,oH);
+  ctx.fillStyle='rgba(0,137,123,0.10)'; ctx.fillRect(ox,oy,oW,oH);
+  var midY=oy+oH/2, scl=Math.min(22,70/Math.max(FA,0.01));
+  ctx.fillStyle='#444'; ctx.beginPath(); ctx.arc(cx,midY,5,0,Math.PI*2); ctx.fill();
+  drawArrow(ctx,cx,midY,cx,midY-FA*scl,'#00897b','FA','r');
+  drawArrow(ctx,cx,midY,cx,midY+FA*scl,'#c62828','P','l');
+  ctx.save(); ctx.strokeStyle='#e65100'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+  ctx.strokeRect(ox-4,oy-4,oW+8,oH+8); ctx.setLineDash([]); ctx.restore();
+  ctx.fillStyle='#e65100'; ctx.font='10px Cairo'; ctx.textAlign='center';
+  ctx.fillText('Vl السائل المزاح', cx, oy+oH+18);
+}
+
+function calc1() {
+  var P=parseFloat(document.getElementById('m1P').value);
+  var Pp=parseFloat(document.getElementById('m1Pp').value);
+  if (isNaN(P)||isNaN(Pp)||P<=0||Pp<0) { document.getElementById('r1').innerHTML='تحقق من القيم'; return; }
+  var FA=P-Pp;
+  document.getElementById('r1').innerHTML='FA = P - P<sub>ap</sub> = '+P.toFixed(2)+' - '+Pp.toFixed(2)+' = <b>'+FA.toFixed(3)+' N</b>';
+  drawD1();
+}
+
+function calc2() {
+  var rho=parseFloat(document.getElementById('m2rho').value);
+  var Vcm=parseFloat(document.getElementById('m2V').value);
+  var V=Vcm*1e-6, FA=rho*g*V;
+  document.getElementById('r2').innerHTML='FA = &#961;<sub>l</sub> x g x V<sub>l</sub><br>= '+rho+' x '+g+' x '+(V*1e6).toFixed(0)+' cm&#179;<br>= <b>'+FA.toFixed(4)+' N</b>';
+  drawD2();
+}
+
+function simInput() {
+  var rhoS=parseInt(document.getElementById('rhoS').value);
+  var rhoF=parseInt(document.getElementById('rhoF').value);
+  var Vcm=parseInt(document.getElementById('volS').value);
+  document.getElementById('rvS').textContent=rhoS;
+  document.getElementById('rvF').textContent=rhoF;
+  document.getElementById('rvV').textContent=Vcm;
+  var V=Vcm*1e-6, P=rhoS*g*V;
+  var state,subFrac,label,cls;
+  if (rhoS<rhoF-15) { state='float'; subFrac=rhoS/rhoF; label='جسم طافٍ'; cls='eq-float'; }
+  else if (Math.abs(rhoS-rhoF)<=15) { state='suspend'; subFrac=1; label='جسم عالق في وسط السائل'; cls='eq-suspend'; }
+  else { state='sink'; subFrac=1; label='الجسم يغوص'; cls='eq-sink'; }
+  var FA=rhoF*g*subFrac*V, net=FA-P;
+  var netTxt=Math.abs(net)<0.05?'توازن':(net>0?'صاعد':'هابط');
+  var netCol=Math.abs(net)<0.05?'#00695c':(net>0?'#00695c':'#c62828');
+  document.getElementById('simInfo').innerHTML='ثقل الجسم P = <b>'+P.toFixed(3)+' N</b> | FA = <b>'+FA.toFixed(3)+' N</b><br>المحصلة: <b style="color:'+netCol+';">'+netTxt+' ('+net.toFixed(3)+' N)</b>';
+  var bd=document.getElementById('eqBadge');
+  bd.textContent=label; bd.className='eq-badge '+cls;
+  var cv=document.getElementById('simC');
+  var W=cv.width,H=cv.height,bx=20,by=20,bw=W-40,bh=H-55,wt=70;
+  var side=Math.cbrt(Vcm)*9;
+  var oW=Math.min(side,130),oH=Math.min(side,110);
+  var waterBot=by+bh, tY;
+  if (state==='float') tY=by+wt-(oH-subFrac*oH);
+  else if (state==='suspend') tY=by+wt+(bh-wt)/2-oH/2;
+  else tY=waterBot-oH-16;
+  if (animY===null) animY=tY;
+  animTarget=tY;
+  if (animRAF) cancelAnimationFrame(animRAF);
+  animRAF=requestAnimationFrame(function(){ animStep(rhoS,rhoF,Vcm,P,oW,oH); });
+}
+
+function animStep(rhoS,rhoF,Vcm,P,oW,oH) {
+  var diff=animTarget-animY;
+  if (Math.abs(diff)<0.4) { animY=animTarget; drawSim(rhoS,rhoF,Vcm,P,animY,oW,oH); animRAF=null; return; }
+  animY+=diff*SIM_SPEED;
+  drawSim(rhoS,rhoF,Vcm,P,animY,oW,oH);
+  animRAF=requestAnimationFrame(function(){ animStep(rhoS,rhoF,Vcm,P,oW,oH); });
+}
+
+function drawSim(rhoS,rhoF,Vcm,P,objY,oW,oH) {
+  var cv=document.getElementById('simC');
+  var ctx=cv.getContext('2d');
+  var W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f0f6fc'; ctx.fillRect(0,0,W,H);
+  var bx=20,by=20,bw=W-40,bh=H-55,wt=70;
+  drawBox(ctx,bx,by,bw,bh,wt);
+  var cx=bx+bw/2,ox=cx-oW/2,oy=objY,wl=by+wt;
+  var objBot=oy+oH;
+  var subPx=Math.max(0,Math.min(objBot-wl,oH));
+  var curFrac=subPx/oH;
+  if (subPx>0) { ctx.fillStyle='rgba(0,137,123,0.09)'; ctx.fillRect(ox,wl,oW,subPx); }
+  drawObj(ctx,ox,oy,oW,oH);
+  if (curFrac>0.01&&curFrac<0.99) {
+    ctx.save(); ctx.setLineDash([5,4]); ctx.strokeStyle='#1565c0'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(ox,wl); ctx.lineTo(ox+oW,wl); ctx.stroke();
+    ctx.setLineDash([]); ctx.restore();
+  }
+  var axX=cx,comY=oy+oH/2,cobY;
+  if (subPx<=0||curFrac>=0.99) cobY=comY;
+  else cobY=wl+subPx/2;
+  var V=Vcm*1e-6,FA2=rhoF*g*curFrac*V,scl=28;
+  var faPx=Math.min(FA2*scl,105),pPx=Math.min(P*scl,105);
+  if (faPx>3) drawArrow(ctx,axX,cobY,axX,cobY-faPx,'#00897b','FA','r');
+  if (pPx>3)  drawArrow(ctx,axX,comY,axX,comY+pPx,'#c62828','P','l');
+  ctx.fillStyle='#c62828'; ctx.beginPath(); ctx.arc(axX,comY,5,0,Math.PI*2); ctx.fill();
+  if (subPx>6) { ctx.fillStyle='#00897b'; ctx.beginPath(); ctx.arc(axX,cobY,5,0,Math.PI*2); ctx.fill(); }
+  ctx.fillStyle='#78909c'; ctx.font='8px Cairo'; ctx.textAlign='center';
+  ctx.fillText('* مركز الثقل   * المركز الهندسي للجزء المغمور', W/2, H-10);
+}
+
+function shapeChanged() {
+  var s=document.getElementById('shape').value, h='';
+  if (s==='cube') h='<div class="field"><label>طول الضلع a</label><input type="number" id="d1" value="0.06" step="0.005" min="0"><span class="unit">m</span></div>';
+  else if (s==='cyl') {
+    h='<div class="field"><label>نصف القطر r</label><input type="number" id="d1" value="0.03" step="0.005" min="0"><span class="unit">m</span></div>';
+    h+='<div class="field"><label>الارتفاع h</label><input type="number" id="d2" value="0.12" step="0.005" min="0"><span class="unit">m</span></div>';
+  } else h='<div class="field"><label>نصف القطر r</label><input type="number" id="d1" value="0.04" step="0.005" min="0"><span class="unit">m</span></div>';
+  document.getElementById('shapeFlds').innerHTML=h;
+}
+
+function calcReg() {
+  var s=document.getElementById('shape').value;
+  var rhoS=parseFloat(document.getElementById('arRhoS').value);
+  var rhoF=parseFloat(document.getElementById('arRhoF').value);
+  var d1=parseFloat(document.getElementById('d1').value);
+  var V;
+  if (s==='cube') V=d1*d1*d1;
+  else if (s==='cyl') { var d2=parseFloat(document.getElementById('d2').value); V=Math.PI*d1*d1*d2; }
+  else V=(4/3)*Math.PI*d1*d1*d1;
+  var ratio=rhoS/rhoF, html;
+  if (rhoS<rhoF) {
+    var Vsub=ratio*V,Vfl=V-Vsub;
+    html='V<sub>s</sub> الكلي = <b>'+(V*1e6).toFixed(2)+' cm&#179;</b><br>';
+    html+='نسبة الغمر = &#961;<sub>s</sub>/&#961;<sub>l</sub> = <b>'+(ratio*100).toFixed(1)+'%</b><br>';
+    html+='V<sub>l</sub> مغمور = <b>'+(Vsub*1e6).toFixed(2)+' cm&#179;</b><br>';
+    html+='V طافٍ = <b>'+(Vfl*1e6).toFixed(2)+' cm&#179;</b>';
+    drawReg({fl:true,ratio:ratio,shape:s});
+  } else {
+    html='&#961;<sub>s</sub> >= &#961;<sub>l</sub> - الجسم لا يطفو';
+    drawReg({fl:false,shape:s});
+  }
+  document.getElementById('regRes').innerHTML=html;
+}
+
+function drawReg(p) {
+  var cv=document.getElementById('actC1');
+  var ctx=cv.getContext('2d');
+  var W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f5f9ff'; ctx.fillRect(0,0,W,H);
+  var bx=8,by=8,bw=W-16,bh=H-24,wt=55;
+  drawBox(ctx,bx,by,bw,bh,wt);
+  if (!p.fl) {
+    ctx.fillStyle='#c62828'; ctx.font='bold 10px Cairo'; ctx.textAlign='center';
+    ctx.fillText('الجسم يغوص', W/2, H/2); return;
+  }
+  var oW=54,oH=p.shape==='sphere'?54:60;
+  var ox=bx+bw/2-oW/2,subPx=p.ratio*oH,oy=by+wt-(oH-subPx),wl=by+wt;
+  var cx2=ox+oW/2,cy2=oy+oH/2;
+  ctx.save();
+  ctx.beginPath();
+  if (p.shape==='sphere') ctx.arc(cx2,cy2,oW/2,0,Math.PI*2); else ctx.rect(ox,oy,oW,oH);
+  ctx.clip();
+  ctx.fillStyle='rgba(0,137,123,0.13)'; ctx.fillRect(ox,wl,oW,subPx);
+  ctx.restore();
+  var gr=ctx.createLinearGradient(ox,oy,ox+oW,oy+oH);
+  gr.addColorStop(0,'#f7bc6a'); gr.addColorStop(1,'#c97a1a');
+  ctx.fillStyle=gr; ctx.strokeStyle='#7a4a0a'; ctx.lineWidth=1.8;
+  ctx.beginPath();
+  if (p.shape==='sphere') ctx.arc(cx2,cy2,oW/2,0,Math.PI*2); else ctx.rect(ox,oy,oW,oH);
+  ctx.fill(); ctx.stroke();
+  if (p.shape==='cyl') {
+    ctx.strokeStyle='#7a4a0a'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.ellipse(cx2,oy+5,oW/2,5,0,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx2,oy+oH-5,oW/2,5,0,0,Math.PI*2);
+    ctx.fillStyle=gr; ctx.fill(); ctx.stroke();
+  }
+  ctx.save(); ctx.setLineDash([4,3]); ctx.strokeStyle='#1565c0'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(bx,wl); ctx.lineTo(bx+bw,wl); ctx.stroke();
+  ctx.setLineDash([]); ctx.restore();
+  ctx.strokeStyle='#00897b'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(ox-5,wl); ctx.lineTo(ox-5,wl+subPx); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox-5,wl); ctx.lineTo(ox-2,wl); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox-5,wl+subPx); ctx.lineTo(ox-2,wl+subPx); ctx.stroke();
+  ctx.strokeStyle='#e65100';
+  ctx.beginPath(); ctx.moveTo(ox-5,oy); ctx.lineTo(ox-5,wl); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox-5,oy); ctx.lineTo(ox-2,oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox-5,wl); ctx.lineTo(ox-2,wl); ctx.stroke();
+  ctx.fillStyle='rgba(0,105,92,0.9)'; ctx.font='bold 9px Cairo'; ctx.textAlign='center';
+  if (subPx>12) ctx.fillText('Vl مغمور', cx2, wl+subPx/2+4);
+  if (subPx<oH*0.92) { ctx.fillStyle='rgba(230,81,0,0.9)'; ctx.fillText('V طافٍ', cx2, oy+(oH-subPx)/2+4); }
+  ctx.fillStyle='#546e7a'; ctx.font='8px Cairo';
+  ctx.fillText((p.ratio*100).toFixed(0)+'% مغمور', W/2, H-6);
+}
+
+function calcIrr() {
+  var P=parseFloat(document.getElementById('irP').value);
+  var Pp=parseFloat(document.getElementById('irPp').value);
+  var rho1=parseFloat(document.getElementById('irRho1').value);
+  var rho2=parseFloat(document.getElementById('irRho2').value);
+  var det=document.getElementById('detectedMat');
+  det.style.display='none';
+  if (P<=0||Pp<0||Pp>=P) { document.getElementById('irrRes').innerHTML='تحقق من القيم: يجب ان P > Pap'; drawIrr({}); return; }
+  var FA1=P-Pp, Vs=FA1/(1000*g), mass=P/g, rhoS=mass/Vs, ratio2=rhoS/rho2;
+  var html='FA = P - P<sub>ap</sub> = <b>'+FA1.toFixed(3)+' N</b><br>';
+  html+='V<sub>s</sub> الكلي = <b>'+(Vs*1e6).toFixed(2)+' cm&#179;</b><br>';
+  html+='&#961;<sub>s</sub> = <b>'+rhoS.toFixed(0)+' kg/m&#179;</b><br>';
+  html+='<br>في السائل 2:<br>';
+  var Vsub,Vfl,fl;
+  if (rhoS<rho2) {
+    fl=true; Vsub=ratio2*Vs; Vfl=Vs-Vsub;
+    html+='نسبة الغمر = <b>'+(ratio2*100).toFixed(1)+'%</b><br>';
+    html+='V<sub>l</sub> مغمور = <b>'+(Vsub*1e6).toFixed(2)+' cm&#179;</b><br>';
+    html+='V طافٍ = <b>'+(Vfl*1e6).toFixed(2)+' cm&#179;</b>';
+  } else if (Math.abs(rhoS-rho2)<=15) {
+    fl=false; Vsub=Vs; Vfl=0; html+='الجسم <b>عالق</b> في وسط السائل';
+  } else {
+    fl=false; Vsub=Vs; Vfl=0; html+='الجسم <b>يغوص</b>';
+  }
+  document.getElementById('irrRes').innerHTML=html;
+  var matName=detectMat(rhoS, SOLIDS, 80);
+  if (matName) { det.textContent='المادة المكتشفة: ' + matName; det.style.display='block'; }
+  drawIrr({Vsub:Vsub,Vfl:Vfl,fl:fl,ratio:ratio2});
+}
+
+function drawIrr(p) {
+  var cv=document.getElementById('actC2');
+  var ctx=cv.getContext('2d');
+  var W=cv.width,H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f5f9ff'; ctx.fillRect(0,0,W,H);
+  var bx=8,by=8,bw=W-16,bh=H-24,wt=55;
+  drawBox(ctx,bx,by,bw,bh,wt);
+  if (!p.Vsub) {
+    ctx.fillStyle='#90a4ae'; ctx.font='9px Cairo'; ctx.textAlign='center';
+    ctx.fillText('ادخل القيم', W/2, H/2); return;
+  }
+  var cx=bx+bw/2,totalH=65,wl=by+wt;
+  var ratio=p.fl?p.ratio:1;
+  var subH=ratio*totalH;
+  var oy=p.fl?(wl-(totalH-subH)):(by+bh-totalH-10);
+  function blob() {
+    ctx.moveTo(cx,oy);
+    ctx.bezierCurveTo(cx+24,oy+6,cx+30,oy+28,cx+18,oy+totalH);
+    ctx.bezierCurveTo(cx+6,oy+totalH+6,cx-14,oy+totalH,cx-22,oy+totalH-5);
+    ctx.bezierCurveTo(cx-30,oy+totalH-16,cx-26,oy+8,cx,oy);
+    ctx.closePath();
+  }
+  ctx.save(); ctx.beginPath(); blob(); ctx.clip();
+  ctx.fillStyle='rgba(0,137,123,0.13)'; ctx.fillRect(cx-35,wl,70,subH);
+  ctx.restore();
+  var gr=ctx.createLinearGradient(cx-30,oy,cx+30,oy+totalH);
+  gr.addColorStop(0,'#f7bc6a'); gr.addColorStop(1,'#c97a1a');
+  ctx.fillStyle=gr; ctx.strokeStyle='#7a4a0a'; ctx.lineWidth=1.5;
+  ctx.beginPath(); blob(); ctx.fill(); ctx.stroke();
+  ctx.save(); ctx.setLineDash([4,3]); ctx.strokeStyle='#1565c0'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(bx,wl); ctx.lineTo(bx+bw,wl); ctx.stroke();
+  ctx.setLineDash([]); ctx.restore();
+  if (p.fl) {
+    ctx.strokeStyle='#00897b'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(cx+28,wl); ctx.lineTo(cx+28,wl+subH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+25,wl); ctx.lineTo(cx+28,wl); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+25,wl+subH); ctx.lineTo(cx+28,wl+subH); ctx.stroke();
+    if (subH<totalH) {
+      ctx.strokeStyle='#e65100';
+      ctx.beginPath(); ctx.moveTo(cx+28,oy); ctx.lineTo(cx+28,wl); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+25,oy); ctx.lineTo(cx+28,oy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+25,wl); ctx.lineTo(cx+28,wl); ctx.stroke();
+    }
+    ctx.fillStyle='rgba(0,105,92,0.9)'; ctx.font='bold 9px Cairo'; ctx.textAlign='center';
+    if (subH>12) ctx.fillText('Vl مغمور', cx, wl+subH/2+4);
+    if (subH<totalH*0.92) { ctx.fillStyle='rgba(230,81,0,0.9)'; ctx.fillText('V طافٍ', cx, oy+(totalH-subH)/2+4); }
+    ctx.fillStyle='#546e7a'; ctx.font='8px Cairo';
+    ctx.fillText((ratio*100).toFixed(0)+'% مغمور', cx, H-6);
+  } else {
+    ctx.fillStyle='#c62828'; ctx.font='bold 9px Cairo'; ctx.textAlign='center';
+    ctx.fillText('الجسم يغوص', cx, H-6);
+  }
+}
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js')
+      .then(function(reg) { console.log('SW registered:', reg.scope); })
+      .catch(function(err) { console.log('SW error:', err); });
+  });
+}
+
+// INIT
+buildSelect(document.getElementById('m2sel'), FLUIDS);
+buildSelect(document.getElementById('solidSel'), SOLIDS);
+buildSelect(document.getElementById('fluidSel1'), FLUIDS);
+buildSelect(document.getElementById('fluidSel3'), FLUIDS);
+shapeChanged();
+updFl('irRho2','fn2');
+drawD1();
+simInput();
+</script>
+</body>
+</html>
