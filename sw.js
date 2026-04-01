@@ -1,29 +1,25 @@
 // sw.js — Service Worker لدافعة ارخميدس
-const CACHE_NAME = 'arkhimedes-v1';
+const CACHE_NAME = 'arkhimedes-v2';
 
-// الملفات التي تُخزَّن مؤقتاً عند التثبيت
 const PRECACHE_URLS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
+  '/Arkhimedes/',
+  '/Arkhimedes/index.html',
+  '/Arkhimedes/manifest.json',
+  '/Arkhimedes/icons/icon-192.png',
+  '/Arkhimedes/icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap'
 ];
 
-// ===== التثبيت: تخزين الملفات مسبقاً =====
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.addAll(PRECACHE_URLS);
     }).then(function() {
-      // تفعيل فوري دون انتظار إغلاق التبويبات القديمة
       return self.skipWaiting();
     })
   );
 });
 
-// ===== التفعيل: حذف الكاشات القديمة =====
 self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(cacheNames) {
@@ -38,20 +34,14 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// ===== الاعتراض: Cache First، ثم الشبكة =====
 self.addEventListener('fetch', function(event) {
-  // تجاهل الطلبات غير GET
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
     caches.match(event.request).then(function(cachedResponse) {
-      if (cachedResponse) {
-        // موجود في الكاش: نُرجعه فوراً
-        return cachedResponse;
-      }
-      // غير موجود: نجلبه من الشبكة ونخزّنه
+      if (cachedResponse) return cachedResponse;
+
       return fetch(event.request).then(function(networkResponse) {
-        // نخزّن فقط الردود الصحيحة
         if (
           networkResponse &&
           networkResponse.status === 200 &&
@@ -64,8 +54,7 @@ self.addEventListener('fetch', function(event) {
         }
         return networkResponse;
       }).catch(function() {
-        // لا شبكة ولا كاش: نُرجع الصفحة الرئيسية كـ fallback
-        return caches.match('./index.html');
+        return caches.match('/Arkhimedes/index.html');
       });
     })
   );
